@@ -62,8 +62,7 @@ public class Robot {
 	 */
 	public Action getAction() {
 		Action actionReturned = Action.DO_NOTHING;
-		//This code will only execute once
-		
+		//This code will only execute once		
 		if (!initialGoalAddCompleted) {
 			Map<TileStatus, ArrayList<Position>> envPositions = env.getEnvironmentPositions();
 			Position goal = envPositions.get(TileStatus.GOAL).get(0);
@@ -71,19 +70,20 @@ public class Robot {
 
 			goalStackList.push(new GoalItem(goal, TileStatus.GOAL));
 			goalStackList.push(new GoalItem(doorGoal, TileStatus.DOOR_GOAL));
-			addNewGoalByProximity(TileStatus.CHIP);
+			addNewGoalByProximity(TileStatus.BLANK);
 			initialGoalAddCompleted = true;
 		}
 		
 		if (!planExecutionOn) {			
 			if(foundActionList.isEmpty())
 			{
+				//Making switch off so that no action send until we figure out the path
 				planExecutionOn = true;
 				Map<TileStatus, ArrayList<Position>> envPositions = env.getEnvironmentPositions();
 				ArrayList<Position> chips = envPositions.get(TileStatus.CHIP);
 				//goalStack having 2 goal and there are chips left in the environment, then add the chip as goal
 				if (goalStackList.size() == 2 && chips.size() > 0) {
-					addNewGoalByProximity(TileStatus.CHIP);
+					addNewGoalByProximity(TileStatus.BLANK);
 				}
 				while (!goalStackList.isEmpty()) {
 					GoalItem goal = goalStackList.peek();
@@ -108,32 +108,42 @@ public class Robot {
 		Position sourcePosition = env.getRobotPosition(this);
 		PriorityQueue<Node> genericPriorityQueue = new PriorityQueue<>();
 		Map<TileStatus, ArrayList<Position>> envPositions = env.getEnvironmentPositions();
-		ArrayList<Position> goalList = null;
+		ArrayList<Position> goalList = new ArrayList<Position>();
 		if (goalType == TileStatus.CHIP) {
-			goalList = envPositions.get(TileStatus.CHIP);
+			goalList.addAll(envPositions.get(TileStatus.CHIP));
 		} else if (goalType == TileStatus.KEY_BLUE) {
-			goalList = envPositions.get(TileStatus.KEY_BLUE);
+			goalList.addAll(envPositions.get(TileStatus.KEY_BLUE));
 		} else if (goalType == TileStatus.KEY_GREEN) {
-			goalList = envPositions.get(TileStatus.KEY_GREEN);
+			goalList.addAll(envPositions.get(TileStatus.KEY_GREEN));
 		} else if (goalType == TileStatus.KEY_RED) {
-			goalList = envPositions.get(TileStatus.KEY_RED);
+			goalList.addAll(envPositions.get(TileStatus.KEY_RED));
 		} else if (goalType == TileStatus.KEY_YELLOW) {
-			goalList = envPositions.get(TileStatus.KEY_YELLOW);
+			goalList.addAll(envPositions.get(TileStatus.KEY_YELLOW));
 		}
+		else
+		{
+			goalList.addAll(envPositions.get(TileStatus.CHIP));
+			goalList.addAll(envPositions.get(TileStatus.KEY_BLUE));
+			goalList.addAll(envPositions.get(TileStatus.KEY_GREEN));
+			goalList.addAll(envPositions.get(TileStatus.KEY_RED));
+			goalList.addAll(envPositions.get(TileStatus.KEY_YELLOW));
+		}		
 		for (int i = 0; i < goalList.size(); i++) {
 			Position destinationPosition = goalList.get(i);
 			if (sourcePosition != destinationPosition) {
 				genericPriorityQueue.add(new Node(destinationPosition, heuristic(sourcePosition, destinationPosition), ""));
 			}
-
 		}
 
 		if (!genericPriorityQueue.isEmpty()) {
-			goalStackList.push(new GoalItem(genericPriorityQueue.poll().position, goalType));
+			//Get the nearest goal and add to the stack to execute first
+			Node selectedNode = genericPriorityQueue.poll();			
+			goalStackList.push(new GoalItem(selectedNode.position,  env.getTiles().get(selectedNode.position).getStatus()));
 		}
 
 	}
 
+	// This method verify whether new goal need to be added or not to the stack
 	private boolean isSubGoalAdded(TileStatus sourceTileStatus, TileStatus currentTileStatus) {
 		boolean newGoalAdded = false;
 		Map<TileStatus, ArrayList<Position>> envPositions = env.getEnvironmentPositions();
@@ -162,6 +172,7 @@ public class Robot {
 		return newGoalAdded;
 	}
 
+	// This method find the shortest path too reach to the goal
 	private void AStarGoalPathFinding(Position selfPosition, GoalItem targetGoal) {
 
 		// The Position class has also been updated to include an equals method
@@ -302,8 +313,7 @@ public class Robot {
 				return;
 			}
 			// make actions based on the direction in backward order
-			// add all the actions in to queue where get Action will pick each action and
-			// move
+			// add all the actions in to queue where get Action will pick each action and move
 			if (direction == "above") {
 				foundActionList.add(Action.MOVE_UP);
 			}

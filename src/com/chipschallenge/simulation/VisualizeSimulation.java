@@ -41,7 +41,7 @@ public class VisualizeSimulation extends JFrame {
 	private EnvironmentPanel envPanel;
 	private StatusPanel statusPanel;
 	private Environment env;
-	private String mapFile = "maps/public/map03.txt";
+	private String mapFile = "maps/public/map01.txt";
 	private String configFile = "config/configSmall.txt";
 	private Timer timer;
 	
